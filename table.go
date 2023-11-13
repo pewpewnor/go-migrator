@@ -8,16 +8,6 @@ type Table struct {
 	constraints []string
 }
 
-func NewTable(tableName string) *Table {
-	attributes := []*attribute{}
-
-	return &Table{
-		tableName:   tableName,
-		attributes:  attributes,
-		constraints: []string{},
-	}
-}
-
 func (table *Table) addAttribute(columnName string, columnType string) *Column {
 	attr := NewAttribute(columnName, columnType)
 	table.attributes = append(table.attributes, attr)
