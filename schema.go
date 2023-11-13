@@ -55,7 +55,7 @@ func (schema *Schema) DropTable(tableName string) {
 func (schema *Schema) DropTableCascade(tableName string) {
 	_, err := schema.db.Exec(fmt.Sprintf("DROP TABLE IF EXISTS %v CASCADE", tableName))
 	if err != nil {
-		panic(fmt.Sprintf("Nomad cannot drop table '%v': %v", tableName, err))
+		panic(fmt.Sprintf("Nomad cannot drop table cascade '%v': %v", tableName, err))
 	}
 }
 
