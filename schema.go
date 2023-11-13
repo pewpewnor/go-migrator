@@ -10,6 +10,16 @@ type Schema struct {
 	db *sql.DB
 }
 
+func (schema *Schema) NewTable(tableName string) *Table {
+	attributes := []*attribute{}
+
+	return &Table{
+		tableName:   tableName,
+		attributes:  attributes,
+		constraints: []string{},
+	}
+}
+
 func (schema *Schema) CreateTable(table *Table) {
 	columns := ""
 
