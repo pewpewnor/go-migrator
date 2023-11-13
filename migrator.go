@@ -1,6 +1,9 @@
 package nomad
 
-import "database/sql"
+import (
+	"database/sql"
+	"fmt"
+)
 
 type Migration interface {
 	Up(*Schema)
@@ -12,8 +15,19 @@ type Migrator struct {
 	migrations []Migration
 }
 
-func NewMigrator(db *sql.DB) *Migrator {
+func NewMigrator(driverName string, dataSourceName string) *Migrator {
+	db, err := sql.Open(driverName, dataSourceName)
+	if err != nil {
+		panic(fmt.Sprintf("cannot connect to database: %v\n", err))
+	}
+
 	return &Migrator{schema: &Schema{db: db}}
+}
+
+func (migrator *Migrator) Close() {
+	migrator.schema.db.Close()
+	migrator.schema = nil
+	migrator.migrations = nil
 }
 
 func (migrator *Migrator) AddMigration(migration ...Migration) {
