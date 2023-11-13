@@ -1,85 +1,45 @@
 package nomad
 
-import (
-	"database/sql"
-	"fmt"
-	"log"
-)
+import "database/sql"
 
 type Migration interface {
-	Up(*Migrator)
-	Down(*Migrator)
+	Up(*Schema)
+	Down(*Schema)
 }
 
 type Migrator struct {
-	db *sql.DB
+	schema     *Schema
+	migrations []Migration
 }
 
 func NewMigrator(db *sql.DB) *Migrator {
-	return &Migrator{db: db}
+	return &Migrator{schema: &Schema{db: db}}
 }
 
-func (migrator *Migrator) CreateTable(table *Table) {
-	columns := ""
+func (migrator *Migrator) AddMigration(migration ...Migration) {
+	migrator.migrations = append(migrator.migrations, migration...)
+}
 
-	for _, attr := range table.attributes {
-		column := fmt.Sprintf("%v %v", attr.collumnName, attr.collumnType)
-		if attr.primaryKey {
-			column += " PRIMARY KEY"
-		}
-		if !attr.nullable {
-			column += " NOT NULL"
-		}
-
-		if columns == "" {
-			columns += column
-		} else {
-			columns += fmt.Sprintf(", %v", column)
-		}
-	}
-
-	for _, constraint := range table.constraints {
-		if columns == "" {
-			columns += constraint
-		} else {
-			columns += fmt.Sprintf(", %v", constraint)
-		}
-	}
-
-	log.Println(columns)
-
-	_, err := migrator.db.Exec(fmt.Sprintf("CREATE TABLE IF NOT EXISTS %v (%v)", table.tableName, columns))
-	if err != nil {
-		panic(fmt.Sprintf("Nomad cannot create table '%v': %v", table.tableName, err))
+func (migrator *Migrator) MigrateAllUp() {
+	for _, migration := range migrator.migrations {
+		migration.Up(migrator.schema)
 	}
 }
 
-func (migrator *Migrator) DropTable(tableName string) {
-	_, err := migrator.db.Exec(fmt.Sprintf("DROP TABLE IF EXISTS %v", tableName))
-	if err != nil {
-		panic(fmt.Sprintf("Nomad cannot drop table '%v': %v", tableName, err))
+func (migrator *Migrator) MigrateAllDown() {
+	for i := len(migrator.migrations) - 1; i >= 0; i-- {
+		migrator.migrations[i].Down(migrator.schema)
 	}
 }
 
-func (migrator *Migrator) DropTableCascade(tableName string) {
-	_, err := migrator.db.Exec(fmt.Sprintf("DROP TABLE IF EXISTS %v CASCADE", tableName))
-	if err != nil {
-		panic(fmt.Sprintf("Nomad cannot drop table '%v': %v", tableName, err))
-	}
-}
-
-func (migrator *Migrator) AlterTable(table *Table) {
-
-}
-
-func MigrateUp(migrator *Migrator, migrations ...Migration) {
+func (migrator *Migrator) MigrateUp(migrations ...Migration) {
 	for _, migration := range migrations {
-		migration.Up(migrator)
+		migration.Up(migrator.schema)
 	}
 }
 
-func MigrateDown(migrator *Migrator, migrations ...Migration) {
+func (migrator *Migrator) MigrateDown(migrations ...Migration) {
 	for _, migration := range migrations {
-		migration.Down(migrator)
+		migration.Down(migrator.schema)
 	}
 }
